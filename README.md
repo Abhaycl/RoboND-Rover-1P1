@@ -31,7 +31,7 @@ The goal of this project is it will give you first hand experience with the thre
 1.  cd code
 2.  python drive_rover.py
 ```
-Run the simulator Roversim_x86_64.exe.
+Run the simulator Roversim_x86_64.exe
 
 ---
 
