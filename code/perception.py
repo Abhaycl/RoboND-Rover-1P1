@@ -3,9 +3,13 @@ import cv2
 
 # Identify pixels above the threshold
 # Threshold of RGB > 160 does a nice job of identifying ground pixels only
-def color_thresh(img, rgb_thresh=(160, 160, 160)):
+#def color_thresh(img, rgb_thresh=(160, 160, 160)):
+def color_thresh(img, rgb_thresh=(160, 160, 160, 100, 100, 50)):
     # Create an array of zeros same xy size as img, but single channel
-    color_select = np.zeros_like(img[:,:,0])
+    #color_select = np.zeros_like(img[:,:,0])
+    color_select_path = np.zeros_like(img[:,:,0])
+    color_select_rock = np.zeros_like(img[:,:,0])
+    color_select_obst = np.zeros_like(img[:,:,0])
     # Require that each pixel be above all three threshold values in RGB
     # above_thresh will now contain a boolean array with "True"
     # where threshold was met
@@ -58,7 +62,6 @@ def rotate_pix(xpix, ypix, yaw):
     # Convert yaw to radians
     yaw_rad = yaw * np.pi / 180
     xpix_rotated = (xpix * np.cos(yaw_rad)) - (ypix * np.sin(yaw_rad))
-                            
     ypix_rotated = (xpix * np.sin(yaw_rad)) + (ypix * np.cos(yaw_rad))
     # Return the result  
     return xpix_rotated, ypix_rotated
@@ -88,11 +91,11 @@ def pix_to_world(xpix, ypix, xpos, ypos, yaw, world_size, scale):
 
 # Define a function to perform a perspective transform
 def perspect_transform(img, src, dst):
-           
     M = cv2.getPerspectiveTransform(src, dst)
     warped = cv2.warpPerspective(img, M, (img.shape[1], img.shape[0]))# keep same size as input image
-    
-    return warped
+    mask = cv2.warpPerspective(np.ones_like(img[:,:,0]), M, (img.shape[1], img.shape[0]))
+    #return warped
+    return warped, mask
 
 
 # Apply the above functions in succession and update the Rover state accordingly
@@ -111,15 +114,14 @@ def perception_step(Rover):
     # is not the position of the rover but a bit in front of it
     # this is just a rough guess, feel free to change it!
     bottom_offset = 6
-	scale = 2 * distance_size
+    scale = 2 * distance_size
     source = np.float32([[14, 140], [301 ,140], [200, 96], [118, 96]])
     destination = np.float32([[image.shape[1]/2 - distance_size, image.shape[0] - bottom_offset],
                               [image.shape[1]/2 + distance_size, image.shape[0] - bottom_offset],
                               [image.shape[1]/2 + distance_size, image.shape[0] - scale - bottom_offset], 
                               [image.shape[1]/2 - distance_size, image.shape[0] - scale - bottom_offset],])
     # 2) Apply perspective transform
-    warped = perspect_transform(Rover.img, source, destination)
-    mask = cv2.warpPerspective(np.ones_like(img[:,:,0]), M, (img.shape[1], img.shape[0]))
+    warped, mask = perspect_transform(Rover.img, source, destination)
     # 3) Apply color threshold to identify navigable terrain/obstacles/rock samples
     threshed_path, threshed_rock, threshed_obst = color_thresh(warped)
     obst_map = np.absolute(np.float32(threshed_obst) - 1) * mask

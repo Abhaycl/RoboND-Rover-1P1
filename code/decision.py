@@ -13,7 +13,43 @@ def decision_step(Rover):
     # Check if we have vision data to make decisions with
     if Rover.nav_angles is not None:
         # Check for Rover.mode status
-        if Rover.mode == 'forward': 
+        #if Rover.mode == 'forward':
+        if len(Rover.rock_angles) != 0:
+            Rover.sample_pos_found = Rover.rock_angles
+            Rover.steer = np.clip(np.mean(Rover.rock_angles * 180 / np.pi), -15, 15)
+            if len(Rover.rock_angles) >= 20:
+                Rover.sample_pos_found = Rover.rock_dists
+                if Rover.vel < 1:
+                # Set throttle value to throttle setting
+                    Rover.throttle = 0.1
+                    Rover.brake = 0
+                elif Rover.vel >= 1:
+                    Rover.brake = 5
+                    Rover.throttle = 0
+                else:
+                    Rover.throttle = 0
+                Rover.brake = 0
+            elif len(Rover.rock_angles) <= 20:
+                Rover.sample_pos_found = len(Rover.rock_angles)
+                # Set mode to "stop" and hit the brakes
+                if Rover.vel < 0.7:
+                # Set throttle value to throttle setting
+                    Rover.throttle = 0.1
+                    Rover.brake = 0
+                elif Rover.vel >= 0.7:
+                    Rover.throttle = 0
+                    Rover.brake = 5
+                else:
+                    Rover.throttle = 0              
+                # Set brake to stored brake value
+                if Rover.near_sample:
+                    Rover.throttle = 0
+                    Rover.brake = Rover.brake_set
+                    Rover.steer = 0
+                    if Rover.near_sample and Rover.vel == 0 and not Rover.picking_up:
+                        Rover.send_pickup = True
+        elif Rover.mode == 'forward' and len(Rover.rock_angles) == 0 and Rover.near_sample == 0: 
+            Rover.sample_pos_found = len(Rover.rock_angles)
             # Check the extent of navigable terrain
             if len(Rover.nav_angles) >= Rover.stop_forward:  
                 # If mode is forward, navigable terrain looks good 
@@ -36,7 +72,7 @@ def decision_step(Rover):
                     Rover.mode = 'stop'
         
         # If we're already in "stop" mode then make different decisions
-        elif Rover.mode == 'stop':
+        elif Rover.mode == 'stop' and len(Rover.rock_angles) == 0:
             # If we're in stop mode but still moving keep braking
             if Rover.vel > 0.2:
                 Rover.throttle = 0
