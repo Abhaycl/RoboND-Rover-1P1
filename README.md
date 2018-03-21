@@ -7,11 +7,14 @@ The goal of this project is it will give you first hand experience with the thre
 
 [image0]: ./misc/rover_image.jpg "Rover"
 [image1]: ./misc/data_test.jpg "Data Test"
-[image2]: ./misc/.png ""
-[image3]: ./misc/.png ""
-[image4]: ./misc/.png ""
-[image5]: ./misc/.png ""
-[image6]: ./misc/.png ""
+[image2]: ./misc/pictures_for_calibration.jpg "Pictures For Calibration"
+[image3]: ./misc/perspective_transform.jpg "Perspective Transform"
+[image4]: ./misc/color_thresholding.jpg "Color Thresholding"
+[image5]: ./misc/coordinate_transformations.jpg "Coordinate Transformations"
+[image6]: ./misc/test_dataset_video.jpg "Test Dataset Video"
+[image7]: ./misc/test_data_video.jpg "Test Data Video"
+[image8]: ./misc/.png ""
+[image9]: ./misc/.png ""
 
 ![alt text][image0]
 
@@ -64,8 +67,35 @@ The summary of the files and folders int repo is provided in the table below:
 
 Collection of test data
 
-![alt text][image0]
+![alt text][image1]
 
+Images for the calibration
+
+![alt text][image2]
+
+Perspective Transform
+
+![alt text][image3]
+
+Color Thresholding
+
+![alt text][image4]
+
+Coordinate Transformations
+
+![alt text][image5]
+
+### 2. I complete the process_image() function with the appropriate analysis steps for mapping pixels by identifying navigable terrain, obstacles and rock samples on a world map. I run process_image() with the test data using the provided movie functions to create a video output as a result.
+
+I have made some modifications to different functions. All details are shown in the jupyter notebook'Rover_Project_Test_Notebook.ipynb'.
+
+Output Image results with test_dataset provided
+
+![alt text][image6]
+
+Output Image results with my recorded test data
+
+![alt text][image7]
 
 
 ## The Simulator
