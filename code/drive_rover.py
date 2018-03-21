@@ -82,7 +82,7 @@ class RoverState():
         self.send_pickup = False # Set to True to trigger rock pickup
         self.rock_dists = 0 # rock distances by perception_step
         self.rock_angles = 0 # rock angles by perception_step
-        self.sample_pos_found = None # to print string of sample pos situation
+        self.sample_pos_found = None # to print string of sample position situation
 # Initialize our rover 
 Rover = RoverState()
 
