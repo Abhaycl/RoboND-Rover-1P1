@@ -5,8 +5,8 @@ The goal of this project is it will give you first hand experience with the thre
 
 [//]: # (Image References)
 
-[image0]: ./misc/rover_image.jpg
-[image1]: ./misc/.png ""
+[image0]: ./misc/rover_image.jpg "Rover"
+[image1]: ./misc/data_test.jpg "Data Test"
 [image2]: ./misc/.png ""
 [image3]: ./misc/.png ""
 [image4]: ./misc/.png ""
@@ -46,7 +46,7 @@ The summary of the files and folders int repo is provided in the table below:
 
 ---
 
-The goals / steps of this project are the following:
+### The goals / steps of this project are the following:
 
 - Training / Calibration:
   - Download the simulator and take data in "Training Mode"
@@ -59,6 +59,13 @@ The goals / steps of this project are the following:
   - Fill in the `perception_step()` function within the `perception.py` script with the appropriate image processing functions to create a map and update `Rover()` data (similar to what you did with `process_image()` in the notebook).
   - Fill in the `decision_step()` function within the `decision.py` script with conditional statements that take into consideration the outputs of the `perception_step()` in deciding how to issue throttle, brake and steering commands.
   - Iterate on your perception and decision function until your rover does a reasonable job of navigating and mapping. (Mapping 40% of the map, at 60% Fidelity, and locate at least 1 rock sample).
+
+### 1. We execute the functions that have been provided in the notebook, first with the test data provided, then with the data that I have recorded from the simulator. Add/modify functions to allow color selection of obstacles and rock samples.
+
+Collection of test data
+
+![alt text][image0]
+
 
 
 ## The Simulator
