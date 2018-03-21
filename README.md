@@ -65,23 +65,23 @@ The summary of the files and folders int repo is provided in the table below:
 
 ### 1. We execute the functions that have been provided in the notebook, first with the test data provided, then with the data that I have recorded from the simulator. Add/modify functions to allow color selection of obstacles and rock samples.
 
-Collection of test data
+- Collection of test data
 
 ![alt text][image1]
 
-Images for the calibration
+- Images for the calibration
 
 ![alt text][image2]
 
-Perspective Transform
+- Perspective Transform
 
 ![alt text][image3]
 
-Color Thresholding
+- Color Thresholding
 
 ![alt text][image4]
 
-Coordinate Transformations
+- Coordinate Transformations
 
 ![alt text][image5]
 
@@ -89,13 +89,53 @@ Coordinate Transformations
 
 I have made some modifications to different functions. All details are shown in the jupyter notebook'Rover_Project_Test_Notebook.ipynb'.
 
-Output Image results with test_dataset provided
+- Output Image results with test_dataset provided
 
 ![alt text][image6]
 
-Output Image results with my recorded test data
+- Output Image results with my recorded test data
 
 ![alt text][image7]
+
+### Autonomous Navigation and Mapping
+
+#### Fill in the perception_step() (at the bottom of the perception.py script) and decision_step() (in decision.py) functions in the autonomous mapping scripts and an explanation is provided in the writeup of how and why these functions were modified as they were.
+
+- A. perception.py modifications:
+
+These color_thresh function modifications make it so that it outputs all 3 thresholds, one for navigable path, rock samples, and rock samples; respectively. Thought, red and green thresholds higher than 100 and blue threshold lower than 50 do to recognize the yellow pixels from the rock samples.
+
+```python
+def color_thresh(img, rgb_thresh=(160, 160, 160, 100, 100, 50)):
+    # Create an array of zeros same xy size as img, but single channel
+    #color_select = np.zeros_like(img[:,:,0])
+    color_select_path = np.zeros_like(img[:,:,0])
+    color_select_rock = np.zeros_like(img[:,:,0])
+    color_select_obst = np.zeros_like(img[:,:,0])
+    # Require that each pixel be above all three threshold values in RGB
+    # above_thresh will now contain a boolean array with "True"
+    # where threshold was met
+    # Threshold for navigable path
+    above_thresh = (img[:,:,0] > rgb_thresh[0]) \
+                 & (img[:,:,1] > rgb_thresh[1]) \
+                 & (img[:,:,2] > rgb_thresh[2])
+    # Threshold for rocks
+    between_thresh = (img[:,:,0] > rgb_thresh[3]) \
+                   & (img[:,:,1] > rgb_thresh[4]) \
+                   & (img[:,:,2] < rgb_thresh[5])
+    # Threshold for obstacles
+    below_thresh = (img[:,:,0] < rgb_thresh[0]) \
+                 & (img[:,:,1] < rgb_thresh[1]) \
+                 & (img[:,:,2] < rgb_thresh[2])
+    # Index the array of zeros with the boolean array and set to 1
+    #color_select[above_thresh] = 1
+    color_select_path[above_thresh] = 1
+    color_select_rock[between_thresh] = 1
+    color_select_obst[below_thresh] = 1
+    # Return the binary image
+    #return color_select
+    return color_select_path, color_select_rock, color_select_obst
+```
 
 
 ## The Simulator
