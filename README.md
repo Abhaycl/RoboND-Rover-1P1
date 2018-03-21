@@ -87,7 +87,7 @@ The summary of the files and folders int repo is provided in the table below:
 
 ### 2. I complete the process_image() function with the appropriate analysis steps for mapping pixels by identifying navigable terrain, obstacles and rock samples on a world map. I run process_image() with the test data using the provided movie functions to create a video output as a result.
 
-I have made some modifications to different functions. All details are shown in the jupyter notebook'Rover_Project_Test_Notebook.ipynb'.
+I have made some modifications to different functions. All details are shown in the jupyter notebook 'Rover_Project_Test_Notebook.ipynb'.
 
 - Output Image results with test_dataset provided
 
