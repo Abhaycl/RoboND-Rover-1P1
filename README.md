@@ -63,7 +63,7 @@ The summary of the files and folders int repo is provided in the table below:
   - Fill in the `decision_step()` function within the `decision.py` script with conditional statements that take into consideration the outputs of the `perception_step()` in deciding how to issue throttle, brake and steering commands.
   - Iterate on your perception and decision function until your rover does a reasonable job of navigating and mapping. (Mapping 40% of the map, at 60% Fidelity, and locate at least 1 rock sample).
 
-### 1. We execute the functions that have been provided in the notebook, first with the test data provided, then with the data that I have recorded from the simulator. Add/modify functions to allow color selection of obstacles and rock samples.
+#### We execute the functions that have been provided in the notebook, first with the test data provided, then with the data that I have recorded from the simulator. Add/modify functions to allow color selection of obstacles and rock samples.
 
 - Collection of test data
 
@@ -85,7 +85,7 @@ The summary of the files and folders int repo is provided in the table below:
 
 ![alt text][image5]
 
-### 2. I complete the process_image() function with the appropriate analysis steps for mapping pixels by identifying navigable terrain, obstacles and rock samples on a world map. I run process_image() with the test data using the provided movie functions to create a video output as a result.
+#### I complete the process_image() function with the appropriate analysis steps for mapping pixels by identifying navigable terrain, obstacles and rock samples on a world map. I run process_image() with the test data using the provided movie functions to create a video output as a result.
 
 I have made some modifications to different functions. All details are shown in the jupyter notebook 'Rover_Project_Test_Notebook.ipynb'.
 
