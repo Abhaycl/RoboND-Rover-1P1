@@ -5,12 +5,15 @@ The goal of this project is it will give you first hand experience with the thre
 
 [//]: # (Image References)
 
-[image1]: /misc/.png ""
-[image2]: /misc/.png ""
-[image3]: /misc/.png ""
-[image4]: /misc/.png ""
-[image5]: /misc/.png ""
-[image6]: /misc/.png ""
+[image0]: ./misc/rover_image.jpg
+[image1]: ./misc/.png ""
+[image2]: ./misc/.png ""
+[image3]: ./misc/.png ""
+[image4]: ./misc/.png ""
+[image5]: ./misc/.png ""
+[image6]: ./misc/.png ""
+
+![alt text][image0]
 
 #### How to run the jupyter test program
 
