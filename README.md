@@ -1,3 +1,49 @@
+# Search and Sample Return Project Starter Code
+
+The goal of this project is it will give you first hand experience with the three essential elements of robotics, which are perception, decision making and actuation.  You will carry out this project in a simulator environment built with the Unity game engine.
+<!--more-->
+
+[//]: # (Image References)
+
+[image1]: /misc/.png ""
+[image2]: /misc/.png ""
+[image3]: /misc/.png ""
+[image4]: /misc/.png ""
+[image5]: /misc/.png ""
+[image6]: /misc/.png ""
+
+#### How to run the jupyter test program
+
+```bash
+1.  cd code
+2.  jupyter notebook Rover_Project_Test_Notebook.ipynb
+```
+
+#### How to run the program with the simulator
+
+```bash
+1.  cd code
+2.  python drive_rover.py
+```
+Run the simulator Roversim_x86_64.exe.
+
+---
+
+The summary of the files and folders int repo is provided in the table below:
+
+| File/Folder                     | Definition                                                                                            |
+| :------------------------------ | :---------------------------------------------------------------------------------------------------- |
+| calibration_images/*            | Folder that contains the images to calibrate the camera.                                              |
+| code/*                          | Folder that contains the source files of the project.                                                 |
+| misc/*                          | Folder that contains third-person image of the rover.                                                 |
+| output/*                        | It contains the video .mp4 with the test images of the rover on the ground.                           |
+| test_dataset/*                  | It contains everything related to the Waypoint updater node.                                          |
+|                                 |                                                                                                       |
+| README.md                       | Contains the project documentation.                                                                   |
+
+---
+
+
 [//]: # (Image References)
 [image_0]: ./misc/rover_image.jpg
 [![Udacity - Robotics NanoDegree Program](https://s3-us-west-1.amazonaws.com/udacity-robotics/Extra+Images/RoboND_flag.png)](https://www.udacity.com/robotics)
