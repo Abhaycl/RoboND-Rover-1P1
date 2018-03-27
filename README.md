@@ -145,34 +145,37 @@ Return the binary images
     return color_select_path, color_select_rock, color_select_obst
 ```
 
-2. Changes to the perspect_transform function generate a second output to consider the outside field of view, which would otherwise be considered part of the obstacles without this method.
+2. Changes to the perspect_transform function generate a second output to consider the outside field of view, which would otherwise be considered part of the obstacles without this method. Also, a mask is obtained to further narrow the field of view
 
 ```python
 def perspect_transform(img, src, dst):
     M = cv2.getPerspectiveTransform(src, dst)
-    warped = cv2.warpPerspective(img, M, (img.shape[1], img.shape[0]))# keep same size as input image
+	# Warped image
+    warped = cv2.warpPerspective(img, M, (img.shape[1], img.shape[0]))
+	# Mask
     mask = cv2.warpPerspective(np.ones_like(img[:,:,0]), M, (img.shape[1], img.shape[0]))
-    #return warped
+
+    # Return warped
     return warped, mask
 ```
 
-3. Changes to the perception_step() function have been made to apply all the functions previously stated to provide a complete computer vision image that can be used to tell the rover where it can travel and where it can't, as well as adding the ability to detect rock samples. I also applied the to_polar_coords() function to the rock 'x' and 'y' pixels to provide the rover distance and direction to where the rock samples are, for steering guidance.
+3. Changes to the perception_step() or process_image() function have been made to apply all the functions previously stated to provide a complete computer vision image that can be used to tell the rover where it can travel and where it can't, as well as adding the ability to detect rock samples. I also applied the to_polar_coords() function to the rock 'x' and 'y' pixels to provide the rover distance and direction to where the rock samples are, for steering guidance.
 
+Perform perception steps to update Rover
 ```python
 def perception_step(Rover):
-    # Perform perception steps to update Rover()
-    # TODO: 
-    # NOTE: camera image is coming to you in Rover.img
+    # Get the images from the rover's camera
     image = Rover.img
-    # 1) Define source and destination points for perspective transform
-    # Define calibration box in source (actual) and destination (desired) coordinates
-    # These source and destination points are defined to warp the image
-    # to a grid where each 10x10 pixel square represents 1 square meter
+```
+	
+Define source and destination points for perspective transform, define calibration box in source (actual) and destination (desired) coordinates these source and destination points are defined to warp the image to a grid where each 10x10 pixel square represents 1 square meter.
+```python
     # The destination box will be 2*distance_size on each side
-    distance_size = 5 
-    # Set a bottom offset to account for the fact that the bottom of the image 
-    # is not the position of the rover but a bit in front of it
-    # this is just a rough guess, feel free to change it!
+    distance_size = 5
+```
+
+A bottom offset is set to account for the fact that the bottom of the image is not the position of the rover but a bit in front of it this is just a rough guess.
+```python
     bottom_offset = 6
     scale = 2 * distance_size
     source = np.float32([[14, 140], [301 ,140], [200, 96], [118, 96]])
@@ -180,45 +183,71 @@ def perception_step(Rover):
                               [image.shape[1]/2 + distance_size, image.shape[0] - bottom_offset],
                               [image.shape[1]/2 + distance_size, image.shape[0] - scale - bottom_offset], 
                               [image.shape[1]/2 - distance_size, image.shape[0] - scale - bottom_offset],])
-    # 2) Apply perspective transform
+```
+
+Apply perspective transform to obtain the warped image and .
+```python
     warped, mask = perspect_transform(Rover.img, source, destination)
-    # 3) Apply color threshold to identify navigable terrain/obstacles/rock samples
+```
+
+Apply color threshold to identify navigable terrain/obstacles/rock samples.
+```python
     threshed_path, threshed_rock, threshed_obst = color_thresh(warped)
-    obst_map = np.absolute(np.float32(threshed_obst) - 1) * mask
-    # 4) Update Rover.vision_image (this will be displayed on left side of screen)
-        # Example: Rover.vision_image[:,:,0] = obstacle color-thresholded binary image
-        #          Rover.vision_image[:,:,1] = rock_sample color-thresholded binary image
-        #          Rover.vision_image[:,:,2] = navigable terrain color-thresholded binary image
+    obst_map = np.absolute(np.float32(threshed_obst)) * mask
+```
+
+Update Rover vision image (this will be displayed on left side of screen).
+```python
     Rover.vision_image[:,:,0] = obst_map * 255
     Rover.vision_image[:,:,1] = threshed_rock * 255
     Rover.vision_image[:,:,2] = threshed_path * 255
-    # 5) Convert map image pixel values to rover-centric coords
+```
+
+Convert map image pixel values to rover-centric coords.
+```python
     obst_xpix, obst_ypix = rover_coords(obst_map)
     rock_xpix, rock_ypix = rover_coords(threshed_rock)
     path_xpix, path_ypix = rover_coords(threshed_path)
-    # 6) Convert rover-centric pixel values to world coordinates
+```
+
+Convert rover-centric pixel values to world coordinates.
+```python
     world_size = Rover.worldmap.shape[0]
     obst_xworld, obst_yworld = pix_to_world(obst_xpix, obst_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, scale)
     rock_xworld, rock_yworld = pix_to_world(rock_xpix, rock_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, scale)
     path_xworld, path_yworld = pix_to_world(path_xpix, path_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, scale)
-    # 7) Update Rover worldmap (to be displayed on right side of screen)
-        # Example: Rover.worldmap[obstacle_y_world, obstacle_x_world, 0] += 1
-        #          Rover.worldmap[rock_y_world, rock_x_world, 1] += 1
-        #          Rover.worldmap[navigable_y_world, navigable_x_world, 2] += 1
-    Rover.worldmap[obst_yworld, obst_xworld, 0] += 50
-    Rover.worldmap[rock_yworld, rock_xworld, 1] += 50
-    Rover.worldmap[path_yworld, path_xworld, 2] += 50
-    # 8) Convert rover-centric pixel positions to polar coordinates
-    rover_dist, rover_angles = to_polar_coords(path_xpix, path_ypix)
+```
+
+Update Rover worldmap (to be displayed on right side of screen).
+```python
+    Rover.worldmap[obst_yworld, obst_xworld, 0] += 255
+    Rover.worldmap[rock_yworld, rock_xworld, 1] += 255
+    Rover.worldmap[path_yworld, path_xworld, 2] += 255
+```
+
+Convert rover-centric pixel positions to polar coordinates.
+```python
+    obst_dist, obst_angles = to_polar_coords(obst_xpix, obst_ypix)
     rock_dist, rock_angles = to_polar_coords(rock_xpix, rock_ypix)
-    # Update Rover pixel distances and angles
-        # Rover.nav_dists = rover_centric_pixel_distances
-        # Rover.nav_angles = rover_centric_angles
-    Rover.nav_dists = rover_dist
-    Rover.nav_angles = rover_angles
+    path_dist, path_angles = to_polar_coords(path_xpix, path_ypix)
+```
+
+Update Rover pixel distances and angles.
+```python
+    Rover.obst_dists = obst_dist
     Rover.rock_dists = rock_dist
+    Rover.nav_dists = path_dist
+    Rover.obst_angles = obst_angles
     Rover.rock_angles = rock_angles
-    
+    Rover.nav_angles = path_angles
+```
+
+If you have found and collected all the rocks the initial starting value is set.
+```python
+    if Rover.mode == 'home':
+        Rover.home_dists, Rover.home_angles = to_polar_coords(Rover.start_pos[0], Rover.start_pos[1])
+	
+	#The values of the rover are returned
     return Rover
 ```
 
