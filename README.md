@@ -103,7 +103,7 @@ I have made some modifications to different functions. All details are shown in 
 
 - A. perception.py modifications:
 
-1. These color_thresh function modifications make it so that it outputs all 3 thresholds, one for navigable path, rock samples, and rock samples; respectively. Thought, red and green thresholds higher than 100 and blue threshold lower than 50 do to recognize the yellow pixels from the rock samples.
+###### 1. These color_thresh function modifications make it so that it outputs all 3 thresholds, one for navigable path, rock samples, and rock samples; respectively. Thought, red and green thresholds higher than 100 and blue threshold lower than 50 do to recognize the yellow pixels from the rock samples.
 
 Thresholds are defined and used to identify the objects, such as the path, obstacles and rocks to be collected.
 ```python
