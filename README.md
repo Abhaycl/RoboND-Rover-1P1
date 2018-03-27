@@ -101,7 +101,7 @@ I have made some modifications to different functions. All details are shown in 
 
 #### Fill in the perception_step() (at the bottom of the perception.py script) and decision_step() (in decision.py) functions in the autonomous mapping scripts and an explanation is provided in the writeup of how and why these functions were modified as they were.
 
-##### - A. perception.py modifications:
+#### - A. perception.py modifications:
 
 1. These color_thresh function modifications make it so that it outputs all 3 thresholds, one for navigable path, rock samples, and rock samples; respectively. Thought, red and green thresholds higher than 100 and blue threshold lower than 50 do to recognize the yellow pixels from the rock samples.
 
@@ -150,9 +150,9 @@ Return the binary images
 ```python
 def perspect_transform(img, src, dst):
     M = cv2.getPerspectiveTransform(src, dst)
-	# Warped image
+    # Warped image
     warped = cv2.warpPerspective(img, M, (img.shape[1], img.shape[0]))
-	# Mask
+    # Mask
     mask = cv2.warpPerspective(np.ones_like(img[:,:,0]), M, (img.shape[1], img.shape[0]))
 
     # Return warped
@@ -246,12 +246,12 @@ If you have found and collected all the rocks the initial starting value is set.
 ```python
     if Rover.mode == 'home':
         Rover.home_dists, Rover.home_angles = to_polar_coords(Rover.start_pos[0], Rover.start_pos[1])
-	
-	#The values of the rover are returned
+    
+    #The values of the rover are returned
     return Rover
 ```
 
-- B. decision.py modifications:
+#### - B. decision.py modifications:
 
 1. Made these changes to the decision_step() function to provide the extra capability to locate and steer towards rock samples when found, stop when near a sample, and pickup sample when it has stopped in front of the rock sample.
 
@@ -362,57 +362,64 @@ def decision_step(Rover):
     return Rover
 ```
 
-- C. drive_rover.py modifications:
+#### - C. drive_rover.py modifications:
 
 1. Made these changes to the init() function to provide the extra variables to the rover for storing rock sample distance and angles, along with a string variable that's used to prompt in different situations for testing and debugging purposes.
 
+We change the acceleration, stop and start thresholds of the rover.
 ```python
+class RoverState():
     def __init__(self):
-        self.start_time = None # To record the start time of navigation
-        self.total_time = None # To record total duration of naviagation
-        self.img = None # Current camera image
-        self.pos = None # Current position (x, y)
-        self.yaw = None # Current yaw angle
-        self.pitch = None # Current pitch angle
-        self.roll = None # Current roll angle
-        self.vel = None # Current velocity
-        self.steer = 0 # Current steering angle
-        self.throttle = 0 # Current throttle value
-        self.brake = 0 # Current brake value
-        self.nav_angles = None # Angles of navigable terrain pixels
-        self.nav_dists = None # Distances of navigable terrain pixels
-        self.ground_truth = ground_truth_3d # Ground truth worldmap
-        self.mode = 'forward' # Current mode (can be forward or stop)
-        #self.throttle_set = 0.2 # Throttle setting when accelerating
         self.throttle_set = 0.6 # Throttle setting when accelerating
-        self.brake_set = 10 # Brake setting when braking
-        # The stop_forward and go_forward fields below represent total count
-        # of navigable terrain pixels.  This is a very crude form of knowing
-        # when you can keep going and when you should stop.  Feel free to
-        # get creative in adding new fields or modifying these!
-        #self.stop_forward = 50 # Threshold to initiate stopping
         self.stop_forward = 100 # Threshold to initiate stopping
-        #self.go_forward = 500 # Threshold to go forward again
         self.go_forward = 1000 # Threshold to go forward again
-        self.max_vel = 2 # Maximum velocity (meters/second)
-        # Image output from perception step
-        # Update this image to display your intermediate analysis steps
-        # on screen in autonomous mode
-        self.vision_image = np.zeros((160, 320, 3), dtype=np.float) 
-        # Worldmap
-        # Update this image with the positions of navigable terrain
-        # obstacles and rock samples
-        self.worldmap = np.zeros((200, 200, 3), dtype=np.float) 
-        self.samples_pos = None # To store the actual sample positions
-        self.samples_to_find = 0 # To store the initial count of samples
-        self.samples_located = 0 # To store number of samples located on map
-        self.samples_collected = 0 # To count the number of samples collected
-        self.near_sample = 0 # Will be set to telemetry value data["near_sample"]
-        self.picking_up = 0 # Will be set to telemetry value data["picking_up"]
-        self.send_pickup = False # Set to True to trigger rock pickup
-        self.rock_dists = 0 # rock distances by perception_step
-        self.rock_angles = 0 # rock angles by perception_step
+```
+
+We add more parameters to the rover that contain the distances and angles of the rocks to be collected, the initial position, rover stuck time.
+```python
+        self.stuck_time = None # Stuck time
+        self.start_pos = None # Start position (x, y)
+        self.rock_dists = 0 # Rock distances of navigable terrain pixels
+        self.obst_dists = None # Obstacle distances of navigable terrain pixels
+        self.home_dists = None # Distance from home position
+        self.rock_angles = 0 # Rock angles of navigable terrain pixels
+        self.obst_angles = None # Angles of navigable terrain pixels
+        self.home_angles = None # Angles from home position
         self.sample_pos_found = None # to print string of sample position situation
+```
+
+#### - D. supporting_functions.py modifications:
+
+In the function def update_rover(Rover, data): we add the following lines of code to display more information about the position of the rocks to be collected.
+
+```python
+    'samples collected:', Rover.samples_collected, 'rock angles', Rover.rock_angles,
+    'rock distance', Rover.rock_dists, 'Samples positions', Rover.samples_pos)
+```
+
+In the create_output_images(Rover) function: we add the total number of rocks to collect
+```python
+    cv2.putText(map_add,"Rocks: "+str(Rover.samples_to_find), (0, 55), 
+                cv2.FONT_HERSHEY_COMPLEX, 0.4, (255, 255, 255), 1)
+```
+
+In the telemetry function def telemetry(sid, data): we add the rover parameters with the initial position.
+```python
+        if Rover.start_pos is None:
+            Rover.start_pos = Rover.pos
+            Rover.stuck_time = Rover.total_time
+```
+
+Visualize complementary information in the simulator - speed, mode and FPS
+```python
+            if Rover.picking_up:
+                mode = 'picking up'
+            else:
+                mode = Rover.mode
+            cv2.putText(Rover.vision_image, "Speed: {}".format(round(Rover.vel, 3)), (2, Rover.vision_image.shape[0] - 24),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+            cv2.putText(Rover.vision_image, "Mode: {}         Current FPS: {}".format(mode, fps), (2, Rover.vision_image.shape[0] - 5),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
 ```
 
 #### Launching in autonomous mode your rover can navigate and map autonomously. Explain your results and how you might improve them in your writeup.
