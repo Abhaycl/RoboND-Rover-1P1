@@ -105,16 +105,20 @@ I have made some modifications to different functions. All details are shown in 
 
 1. These color_thresh function modifications make it so that it outputs all 3 thresholds, one for navigable path, rock samples, and rock samples; respectively. Thought, red and green thresholds higher than 100 and blue threshold lower than 50 do to recognize the yellow pixels from the rock samples.
 
+Thresholds are defined and used to identify the objects, such as the path, obstacles and rocks to be collected.
 ```python
 def color_thresh(img, rgb_thresh=(160, 160, 160, 100, 100, 50)):
-    # Create an array of zeros same xy size as img, but single channel
-    #color_select = np.zeros_like(img[:,:,0])
+```
+
+Create an array of zeros same xy size as img, but single channel.
+```python
     color_select_path = np.zeros_like(img[:,:,0])
     color_select_rock = np.zeros_like(img[:,:,0])
     color_select_obst = np.zeros_like(img[:,:,0])
-    # Require that each pixel be above all three threshold values in RGB
-    # above_thresh will now contain a boolean array with "True"
-    # where threshold was met
+```
+
+Require that each pixel be above all three threshold values in RGB above_thresh will now contain a boolean array with "True" where threshold was met.
+```python
     # Threshold for navigable path
     above_thresh = (img[:,:,0] > rgb_thresh[0]) \
                  & (img[:,:,1] > rgb_thresh[1]) \
@@ -127,13 +131,17 @@ def color_thresh(img, rgb_thresh=(160, 160, 160, 100, 100, 50)):
     below_thresh = (img[:,:,0] < rgb_thresh[0]) \
                  & (img[:,:,1] < rgb_thresh[1]) \
                  & (img[:,:,2] < rgb_thresh[2])
-    # Index the array of zeros with the boolean array and set to 1
-    #color_select[above_thresh] = 1
+```
+
+Index the array of zeros with the boolean array and set to 1.
+```python
     color_select_path[above_thresh] = 1
     color_select_rock[between_thresh] = 1
     color_select_obst[below_thresh] = 1
-    # Return the binary image
-    #return color_select
+```
+
+Return the binary images
+```python
     return color_select_path, color_select_rock, color_select_obst
 ```
 
