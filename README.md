@@ -169,13 +169,11 @@ def perception_step(Rover):
 ```
 	
 Define source and destination points for perspective transform, define calibration box in source (actual) and destination (desired) coordinates these source and destination points are defined to warp the image to a grid where each 10x10 pixel square represents 1 square meter.
-```python
-    # The destination box will be 2*distance_size on each side
-    distance_size = 5
-```
 
 A bottom offset is set to account for the fact that the bottom of the image is not the position of the rover but a bit in front of it this is just a rough guess.
 ```python
+    # The destination box will be 2*distance_size on each side
+    distance_size = 5
     bottom_offset = 6
     scale = 2 * distance_size
     source = np.float32([[14, 140], [301 ,140], [200, 96], [118, 96]])
@@ -366,7 +364,7 @@ def decision_step(Rover):
 
 1. Made these changes to the init() function to provide the extra variables to the rover for storing rock sample distance and angles, along with a string variable that's used to prompt in different situations for testing and debugging purposes.
 
-We change the acceleration, stop and start thresholds of the rover.
+I change the acceleration, stop and start thresholds of the rover.
 ```python
 class RoverState():
     def __init__(self):
@@ -375,7 +373,7 @@ class RoverState():
         self.go_forward = 1000 # Threshold to go forward again
 ```
 
-We add more parameters to the rover that contain the distances and angles of the rocks to be collected, the initial position, rover stuck time.
+I add more parameters to the rover that contain the distances and angles of the rocks to be collected, the initial position, rover stuck time.
 ```python
         self.stuck_time = None # Stuck time
         self.start_pos = None # Start position (x, y)
