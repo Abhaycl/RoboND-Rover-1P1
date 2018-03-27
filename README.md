@@ -183,7 +183,7 @@ A bottom offset is set to account for the fact that the bottom of the image is n
                               [image.shape[1]/2 - distance_size, image.shape[0] - scale - bottom_offset],])
 ```
 
-Apply perspective transform to obtain the warped image and .
+Apply perspective transform to obtain the warped image and mask.
 ```python
     warped, mask = perspect_transform(Rover.img, source, destination)
 ```
