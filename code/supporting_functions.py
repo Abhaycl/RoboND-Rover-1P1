@@ -54,7 +54,8 @@ def update_rover(Rover, data):
     Rover.throttle, 'steer_angle =', Rover.steer, 'near_sample:', Rover.near_sample, 
     'picking_up:', data["picking_up"], 'sending pickup:', Rover.send_pickup, 
     'total time:', Rover.total_time, 'samples remaining:', data["sample_count"], 
-    'samples collected:', Rover.samples_collected)
+    'samples collected:', Rover.samples_collected, 'rock angles', Rover.rock_angles,
+    'rock distance', Rover.rock_dists, 'Samples positions', Rover.samples_pos)
     # Get the current image from the center camera of the rover
     imgString = data["image"]
     image = Image.open(BytesIO(base64.b64decode(imgString)))
@@ -106,7 +107,7 @@ def create_output_images(Rover):
             if np.min(rock_sample_dists) < 3:
                 samples_located += 1
                 map_add[test_rock_y-rock_size:test_rock_y+rock_size, 
-                test_rock_x-rock_size:test_rock_x+rock_size, :] = 255
+                        test_rock_x-rock_size:test_rock_x+rock_size, :] = 255
     
     # Calculate some statistics on the map results
     # First get the total number of pixels in the navigable terrain map
@@ -134,13 +135,11 @@ def create_output_images(Rover):
                 cv2.FONT_HERSHEY_COMPLEX, 0.4, (255, 255, 255), 1)
     cv2.putText(map_add,"Fidelity: "+str(fidelity)+'%', (0, 40), 
                 cv2.FONT_HERSHEY_COMPLEX, 0.4, (255, 255, 255), 1)
-    cv2.putText(map_add,"Rocks", (0, 55), 
+    cv2.putText(map_add,"Rocks: "+str(Rover.samples_to_find), (0, 55), 
                 cv2.FONT_HERSHEY_COMPLEX, 0.4, (255, 255, 255), 1)
     cv2.putText(map_add,"  Located: "+str(samples_located), (0, 70), 
                 cv2.FONT_HERSHEY_COMPLEX, 0.4, (255, 255, 255), 1)
     cv2.putText(map_add,"  Collected: "+str(Rover.samples_collected), (0, 85), 
-                cv2.FONT_HERSHEY_COMPLEX, 0.4, (255, 255, 255), 1)
-    cv2.putText(Rover.vision_image,"Vision Image" + str(Rover.sample_pos_found), (0,10),
                 cv2.FONT_HERSHEY_COMPLEX, 0.4, (255, 255, 255), 1)
     # Convert map and vision image to base64 strings for sending to server
     pil_img = Image.fromarray(map_add.astype(np.uint8))

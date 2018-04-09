@@ -39,7 +39,7 @@ ground_truth_3d = np.dstack((ground_truth*0, ground_truth*255, ground_truth*0)).
 class RoverState():
     def __init__(self):
         self.start_time = None # To record the start time of navigation
-        self.total_time = None # To record total duration of naviagation
+        self.total_time = None # To record total duration of navigation
         self.img = None # Current camera image
         self.pos = None # Current position (x, y)
         self.yaw = None # Current yaw angle
@@ -61,7 +61,7 @@ class RoverState():
         # when you can keep going and when you should stop.  Feel free to
         # get creative in adding new fields or modifying these!
         #self.stop_forward = 50 # Threshold to initiate stopping
-        self.stop_forward = 100 # Threshold to initiate stopping
+        self.stop_forward = 200 # Threshold to initiate stopping
         #self.go_forward = 500 # Threshold to go forward again
         self.go_forward = 1000 # Threshold to go forward again
         self.max_vel = 2 # Maximum velocity (meters/second)
@@ -80,9 +80,21 @@ class RoverState():
         self.near_sample = 0 # Will be set to telemetry value data["near_sample"]
         self.picking_up = 0 # Will be set to telemetry value data["picking_up"]
         self.send_pickup = False # Set to True to trigger rock pickup
-        self.rock_dists = 0 # rock distances by perception_step
-        self.rock_angles = 0 # rock angles by perception_step
-        self.sample_pos_found = None # to print string of sample position situation
+        self.pos_ini = True # Set initial values for the position
+        self.pos_fin = True # Set final values for the position
+        self.start_pos = None # Start position (x, y)
+        self.dist_fin = None # Final position
+        self.stuck_time = None # Stuck time
+        self.rock_dists = 0 # Rock distances of navigable terrain pixels
+        self.rock_angles = 0 # Rock angles of navigable terrain pixels
+        self.obst_dists = None # Obstacle distances of navigable terrain pixels
+        self.obst_angles = None # Angles of navigable terrain pixels
+        self.home_dists = None # Distance from home position
+        self.home_angles = None # Angles from home position
+        self.rover_dists = None # Angles of navigable terrain pixels
+        self.rover_angles = None # Angles from home position
+        #self.alter = True # Alternating rotation and acceleration to go to the beginning
+        #self.ind = 0 # Number of steer
 # Initialize our rover 
 Rover = RoverState()
 
@@ -112,11 +124,36 @@ def telemetry(sid, data):
         # Initialize / update Rover with current telemetry
         Rover, image = update_rover(Rover, data)
         
+        if Rover.start_pos is None:
+            Rover.start_pos = Rover.pos
+            Rover.stuck_time = Rover.total_time
+        
         if np.isfinite(Rover.vel):
             
             # Execute the perception and decision steps to update the Rover's state
             Rover = perception_step(Rover)
             Rover = decision_step(Rover)
+            
+            # Visualize complementary information in the simulator - speed, mode and FPS
+            if Rover.picking_up:
+                mode = 'picking up'
+            else:
+                mode = Rover.mode
+            #cv2.putText(Rover.vision_image, "navA{}".format(Rover.nav_angles), (2, Rover.vision_image.shape[0] - 104),
+            #            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+            #cv2.putText(Rover.vision_image, "steer: {}".format(np.clip(np.mean(Rover.nav_angles * 180/np.pi), -15, 15)), (2, Rover.vision_image.shape[0] - 84),
+            #            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+            #cv2.putText(Rover.vision_image, "total_time: {}".format(Rover.total_time), (2, Rover.vision_image.shape[0] - 64),
+            #            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+            #cv2.putText(Rover.vision_image, "stuck_time: {}".format(Rover.stuck_time), (2, Rover.vision_image.shape[0] - 44),
+            #            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+            #cv2.putText(Rover.vision_image, "Speed: {}".format(round(Rover.vel, 3)), (2, Rover.vision_image.shape[0] - 24),
+            #            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+            #cv2.putText(Rover.vision_image, "Mode: {}         Current FPS: {}".format(mode, fps), (2, Rover.vision_image.shape[0] - 5),
+            cv2.putText(Rover.vision_image, "Mode: {}".format(mode), (2, Rover.vision_image.shape[0] - 24),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+            cv2.putText(Rover.vision_image, "Current FPS: {}".format(fps), (2, Rover.vision_image.shape[0] - 5),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
             
             # Create output images to send to server
             out_image_string1, out_image_string2 = create_output_images(Rover)
@@ -125,7 +162,7 @@ def telemetry(sid, data):
             
             # Don't send both of these, they both trigger the simulator
             # to send back new telemetry so we must only send one
-            # back in respose to the current telemetry data.
+            # back in response to the current telemetry data.
             
             # If in a state where want to pickup a rock send pickup command
             if Rover.send_pickup and not Rover.picking_up:
@@ -179,7 +216,8 @@ def send_control(commands, image_string1, image_string2):
         data,
         skip_sid=True)
     eventlet.sleep(0)
-# Define a function to send the "pickup" command 
+
+# Define a function to send the "pickup" command
 def send_pickup():
     print("Picking up")
     pickup = {}
@@ -188,6 +226,8 @@ def send_pickup():
         pickup,
         skip_sid=True)
     eventlet.sleep(0)
+    #Rover.mode = 'turn'
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Remote Driving')
     parser.add_argument(
