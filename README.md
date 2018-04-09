@@ -262,10 +262,8 @@ The initial position of the rover is defined when it starts to move.
 
 1. Made these changes to the decision_step() function to provide the extra capability to locate and steer towards rock samples when found, stop when near a sample, and pickup sample when it has stopped in front of the rock sample.
 
-Location of rocks.
-
+- Location of rocks:
 ![alt text][image9]
-
 ```python
 def decision_step(Rover):
     
@@ -316,10 +314,8 @@ def decision_step(Rover):
                         Rover.send_pickup = True
 ```
 
-The rover moves forward.
-
+- The rover moves forward:
 ![alt text][image10]
-
 ```python
         # If there is a suitable navigable road, check for Rover.mode status
         elif Rover.mode == 'forward' and len(Rover.rock_angles) == 0 and Rover.near_sample == 0:
@@ -351,10 +347,8 @@ The rover moves forward.
                 Rover.mode = 'stop'
 ```
 
-The rover stops.
-
+- The rover stops:
 ![alt text][image11]
-
 ```python
         # If we're already in "stop" mode then make different decisions
         elif Rover.mode == 'stop' and len(Rover.rock_angles) == 0:
@@ -388,10 +382,8 @@ The rover stops.
                         Rover.mode = 'forward'
 ```
 
-The rover returns to the starting point.
-
+- The rover returns to the starting point:
 ![alt text][image12]
-
 ```python
         # If we have collected all the samples, return home
         elif Rover.mode == 'return':
