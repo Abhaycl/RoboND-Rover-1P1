@@ -14,7 +14,10 @@ The goal of this project is it will give you first hand experience with the thre
 [image6]: ./misc/test_dataset_video.jpg "Test Dataset Video"
 [image7]: ./misc/test_data_video.jpg "Test Data Video"
 [image8]: ./misc/simulator.jpg "Simulator Parameters"
-[image9]: ./misc/.png ""
+[image9]: ./misc/des1.jpg "Decision flow chart - Rocks"
+[image10]: ./misc/des2.jpg "Decision flow chart - Forward"
+[image11]: ./misc/des3.jpg "Decision flow chart - Stop"
+[image12]: ./misc/des4.jpg "Decision flow chart - Return"
 
 ![alt text][image0]
 
@@ -228,24 +231,30 @@ Convert rover-centric pixel positions to polar coordinates.
     obst_dist, obst_angles = to_polar_coords(obst_xpix, obst_ypix)
     rock_dist, rock_angles = to_polar_coords(rock_xpix, rock_ypix)
     path_dist, path_angles = to_polar_coords(path_xpix, path_ypix)
+    rover_dist, rover_angles = to_polar_coords(Rover.pos[0], Rover.pos[1])
 ```
 
 Update Rover pixel distances and angles.
 ```python
     Rover.obst_dists = obst_dist
-    Rover.rock_dists = rock_dist
-    Rover.nav_dists = path_dist
     Rover.obst_angles = obst_angles
+    Rover.rock_dists = rock_dist
     Rover.rock_angles = rock_angles
+    Rover.nav_dists = path_dist
     Rover.nav_angles = path_angles
+    Rover.rover_dists = rover_dist
+    Rover.rover_angles = rover_angles
 ```
 
-If you have found and collected all the rocks the initial starting value is set.
+The initial position of the rover is defined when it starts to move.
 ```python
-    if Rover.mode == 'home':
-        Rover.home_dists, Rover.home_angles = to_polar_coords(Rover.start_pos[0], Rover.start_pos[1])
+    # Keep the initial position
+    if Rover.pos_ini:
+        Rover.pos_ini = False
+        Rover.home_dists = rover_dist
+        Rover.home_angles = rover_angles
     
-    #The values of the rover are returned
+    # The values of the rover are returned
     return Rover
 ```
 
@@ -253,8 +262,13 @@ If you have found and collected all the rocks the initial starting value is set.
 
 1. Made these changes to the decision_step() function to provide the extra capability to locate and steer towards rock samples when found, stop when near a sample, and pickup sample when it has stopped in front of the rock sample.
 
+Location of rocks.
+
+![alt text][image9]
+
 ```python
 def decision_step(Rover):
+    
     # Implement conditionals to decide what to do given perception data
     # Here you're all set up with some basic functionality but you'll need to
     # improve on this decision tree to do a good job of navigating autonomously!
@@ -262,25 +276,26 @@ def decision_step(Rover):
     # Example:
     # Check if we have vision data to make decisions with
     if Rover.nav_angles is not None:
-        # Check for Rover.mode status
-        #if Rover.mode == 'forward':
+        # The rover has located a sample of rock
         if len(Rover.rock_angles) != 0:
-            Rover.sample_pos_found = Rover.rock_angles
+            # Set steering to average angle clipped to the range +/- 15
             Rover.steer = np.clip(np.mean(Rover.rock_angles * 180 / np.pi), -15, 15)
             if len(Rover.rock_angles) >= 20:
-                Rover.sample_pos_found = Rover.rock_dists
                 if Rover.vel < 1:
-                # Set throttle value to throttle setting
-                    Rover.throttle = 0.1
+                    # Set throttle value to throttle setting
+                    Rover.throttle = 0.35
                     Rover.brake = 0
                 elif Rover.vel >= 1:
                     Rover.brake = 5
                     Rover.throttle = 0
                 else:
                     Rover.throttle = 0
-                Rover.brake = 0
-            elif len(Rover.rock_angles) <= 20:
-                Rover.sample_pos_found = len(Rover.rock_angles)
+                    Rover.brake = 0
+                
+                # If the rover gets stuck, it will decelerate by rotating
+                #stuck(Rover, mode = 'picking up', throttle = -0.5)
+            
+            elif len(Rover.rock_angles) < 20:
                 # Set mode to "stop" and hit the brakes
                 if Rover.vel < 0.7:
                 # Set throttle value to throttle setting
@@ -290,20 +305,28 @@ def decision_step(Rover):
                     Rover.throttle = 0
                     Rover.brake = 5
                 else:
-                    Rover.throttle = 0              
+                    Rover.throttle = 0
                 # Set brake to stored brake value
                 if Rover.near_sample:
                     Rover.throttle = 0
                     Rover.brake = Rover.brake_set
                     Rover.steer = 0
+                    # If the rover is near the sample, it will proceed to collect the rock
                     if Rover.near_sample and Rover.vel == 0 and not Rover.picking_up:
                         Rover.send_pickup = True
-        elif Rover.mode == 'forward' and len(Rover.rock_angles) == 0 and Rover.near_sample == 0: 
-            Rover.sample_pos_found = len(Rover.rock_angles)
+```
+
+The rover moves forward.
+
+![alt text][image10]
+
+```python
+        # If there is a suitable navigable road, check for Rover.mode status
+        elif Rover.mode == 'forward' and len(Rover.rock_angles) == 0 and Rover.near_sample == 0:
             # Check the extent of navigable terrain
-            if len(Rover.nav_angles) >= Rover.stop_forward:  
-                # If mode is forward, navigable terrain looks good 
-                # and velocity is below max, then throttle 
+            if len(Rover.nav_angles) >= Rover.stop_forward:
+                # If mode is forward, navigable terrain looks good
+                # and velocity is below max, then throttle
                 if Rover.vel < Rover.max_vel:
                     # Set throttle value to throttle setting
                     Rover.throttle = Rover.throttle_set
@@ -312,15 +335,27 @@ def decision_step(Rover):
                 Rover.brake = 0
                 # Set steering to average angle clipped to the range +/- 15
                 Rover.steer = np.clip(np.mean(Rover.nav_angles * 180/np.pi), -15, 15)
+                #tmp = np.clip(np.mean(Rover.nav_angles * 180 / np.pi), -15, 15)
+                #Rover.steer = np.clip(tmp - 3 if tmp <= 0 else tmp + 3, -8, 8)
+                
+                # If the rover gets stuck, it will decelerate by rotating
+                stuck(Rover, mode = 'forward', throttle = -1)
+            
             # If there's a lack of navigable terrain pixels then go to 'stop' mode
             elif len(Rover.nav_angles) < Rover.stop_forward:
-                    # Set mode to "stop" and hit the brakes!
-                    Rover.throttle = 0
-                    # Set brake to stored brake value
-                    Rover.brake = Rover.brake_set
-                    Rover.steer = 0
-                    Rover.mode = 'stop'
-        
+                # Set mode to "stop" and hit the brakes!
+                Rover.throttle = 0
+                # Set brake to stored brake value
+                Rover.brake = Rover.brake_set
+                Rover.steer = 0
+                Rover.mode = 'stop'
+```
+
+The rover stops.
+
+![alt text][image11]
+
+```python
         # If we're already in "stop" mode then make different decisions
         elif Rover.mode == 'stop' and len(Rover.rock_angles) == 0:
             # If we're in stop mode but still moving keep braking
@@ -336,28 +371,201 @@ def decision_step(Rover):
                     # Release the brake to allow turning
                     Rover.brake = 0
                     # Turn range is +/- 15 degrees, when stopped the next line will induce 4-wheel turning
-                    Rover.steer = -15 # Could be more clever here about which way to turn
+                    Rover.steer = -15
                 # If we're stopped but see sufficient navigable terrain in front then go!
-                if len(Rover.nav_angles) >= Rover.go_forward:
+                elif len(Rover.nav_angles) >= Rover.go_forward:
                     # Set throttle back to stored value
                     Rover.throttle = Rover.throttle_set
                     # Release the brake
                     Rover.brake = 0
                     # Set steer to mean angle
                     Rover.steer = np.clip(np.mean(Rover.nav_angles * 180/np.pi), -15, 15)
-                    Rover.mode = 'forward'
-    # Just to make the rover do something 
+                    if Rover.samples_to_find == Rover.samples_collected:
+                        # Indicates maximum separation from the starting point
+                        Rover.dist_fin = abs(Rover.rover_dists - Rover.home_dists)
+                        Rover.mode = 'return'
+                    else:
+                        Rover.mode = 'forward'
+```
+
+The rover returns to the starting point.
+
+![alt text][image12]
+
+```python
+        # If we have collected all the samples, return home
+        elif Rover.mode == 'return':
+            # Distance from origin to rover
+            dist_ent = abs(Rover.rover_dists - Rover.home_dists)
+            
+            # If the rover is in an area near the origin it will stop after it has collected all the rocks
+            if (Rover.rover_dists < Rover.home_dists + 4) and (Rover.rover_dists > Rover.home_dists - 4):
+                # Set mode to "stop" and hit the brakes!
+                Rover.mode = 'STOP HOME'
+                Rover.throttle = 0
+                Rover.steer = 0
+                # Set brake to stored brake value
+                Rover.brake = Rover.brake_set
+            
+            elif dist_ent < Rover.dist_fin:
+                # Indicates maximum separation from the starting point
+                Rover.dist_fin = abs(Rover.rover_dists - Rover.home_dists)
+                
+                # Check the extent of navigable terrain
+                if len(Rover.nav_angles) >= Rover.stop_forward:
+                # If mode is forward, navigable terrain looks good
+                # and velocity is below max, then throttle
+                    if Rover.vel < Rover.max_vel:
+                        # Set throttle value to throttle setting
+                        Rover.throttle = Rover.throttle_set
+                    else: # Else coast
+                        Rover.throttle = 0
+                    Rover.brake = 0
+                    # Distance from origin to rover
+                    dist_ent = abs(Rover.rover_dists - Rover.home_dists)
+                    # Set steering to average angle clipped to the range +/- 15
+                    Rover.steer = np.clip(np.mean(Rover.nav_angles * 180/np.pi), -15, 15)
+                    
+                    # If the rover gets stuck, it will decelerate by rotating
+                    stuck(Rover, mode = 'return', throttle = -1)
+                
+                # If there's a lack of navigable terrain pixels then go to 'stop' mode
+                elif len(Rover.nav_angles) < Rover.stop_forward:
+                    # Set mode to "stop" and hit the brakes!
+                    Rover.throttle = 0
+                    # Set brake to stored brake value
+                    Rover.brake = Rover.brake_set
+                    Rover.steer = 0
+                    # If we're in stop mode but still moving keep braking
+                    if Rover.vel > 0.2:
+                        Rover.throttle = 0
+                        Rover.brake = Rover.brake_set
+                        Rover.steer = 0
+                        # If we're not moving (vel < 0.2) then do something else
+                    elif Rover.vel <= 0.2:
+                        # Now we're stopped and we have vision data to see if there's a path forward
+                        if len(Rover.nav_angles) < Rover.go_forward:
+                            Rover.throttle = 0
+                            # Release the brake to allow turning
+                            Rover.brake = 0
+                            # Turn range is +/- 15 degrees, when stopped the next line will induce 4-wheel turning
+                            Rover.steer = -15
+                        # If we're stopped but see sufficient navigable terrain in front then go!
+                        elif len(Rover.nav_angles) >= Rover.go_forward:
+                            # Set throttle back to stored value
+                            Rover.throttle = Rover.throttle_set
+                            # Release the brake
+                            Rover.brake = 0
+                            # Distance from origin to rover
+                            dist_ent = abs(Rover.rover_dists - Rover.home_dists)
+                            # Set steer to mean angle
+                            Rover.steer = np.clip(np.mean(Rover.nav_angles * 180/np.pi), -15, 15)
+            
+            else:
+                # Stops the rover to rotate
+                if Rover.vel > 0:
+                    Rover.brake = Rover.brake_set
+                
+                Rover.throttle = 0
+                Rover.brake = 0
+                throttle = False
+                
+                # Delimitation of the navigable area for rover orientation
+                if (Rover.pos[0] > 54) and (Rover.pos[0] < 63) and (Rover.pos[1] > 96) and (Rover.pos[1] < 107):
+                    # The rover will turn to a suitable navigable position
+                    throttle = turn(Rover, 263)
+                elif (Rover.pos[0] > 12) and (Rover.pos[0] <= 63) and (Rover.pos[1] > 91) and (Rover.pos[1] < 104):
+                    # The rover will turn to a suitable navigable position
+                    throttle = turn(Rover, 350)
+                elif (Rover.pos[0] > 73) and (Rover.pos[0] < 86) and (Rover.pos[1] > 69) and (Rover.pos[1] < 79):
+                    # The rover will turn to a suitable navigable position
+                    throttle = turn(Rover, 52)
+                elif (Rover.pos[0] >= 63) and (Rover.pos[0] < 88) and (Rover.pos[1] > 76) and (Rover.pos[1] < 94):
+                    # The rover will turn to a suitable navigable position
+                    throttle = turn(Rover, 334)
+                
+                # Delimitation of the navigable area for rover orientation
+                if (Rover.pos[0] > 114) and (Rover.pos[0] < 123) and (Rover.pos[1] > 45) and (Rover.pos[1] < 52):
+                    # The rover will turn to a suitable navigable position
+                    throttle = turn(Rover, 189)
+                elif (Rover.pos[0] > 101) and (Rover.pos[0] < 119) and (Rover.pos[1] > 7) and (Rover.pos[1] < 73):
+                    # The rover will turn to a suitable navigable position
+                    throttle = turn(Rover, 98)
+                
+                # Delimitation of the navigable area for rover orientation
+                if (Rover.pos[0] > 99) and (Rover.pos[0] < 107) and (Rover.pos[1] > 180) and (Rover.pos[1] < 193):
+                    # The rover will turn to a suitable navigable position
+                    throttle = turn(Rover, 272)
+                elif (Rover.pos[0] > 100) and (Rover.pos[0] < 134) and (Rover.pos[1] > 115) and (Rover.pos[1] < 180):
+                    # The rover will turn to a suitable navigable position
+                    throttle = turn(Rover, 289)
+                
+                # Delimitation of the navigable area for rover orientation
+                if (Rover.pos[0] >= 88) and (Rover.pos[0] < 99) and (Rover.pos[1] > 73) and (Rover.pos[1] < 90):
+                    # The rover will turn to a suitable navigable position
+                    throttle = turn(Rover, 78)
+                
+                # Delimitation of the navigable area for rover orientation
+                if (Rover.pos[0] > 104) and (Rover.pos[0] < 108) and (Rover.pos[1] > 80) and (Rover.pos[1] < 85):
+                    # The rover will turn to a suitable navigable position
+                    throttle = turn(Rover, 190)
+                elif (Rover.pos[0] > 135) and (Rover.pos[0] < 147) and (Rover.pos[1] > 90) and (Rover.pos[1] < 100):
+                    # The rover will turn to a suitable navigable position
+                    throttle = turn(Rover, 120)
+                elif (Rover.pos[0] > 146) and (Rover.pos[0] < 151) and (Rover.pos[1] > 108) and (Rover.pos[1] < 111):
+                    # The rover will turn to a suitable navigable position
+                    throttle = turn(Rover, 142)
+                elif (Rover.pos[0] >= 99) and (Rover.pos[0] < 148) and (Rover.pos[1] > 73) and (Rover.pos[1] < 115):
+                    # The rover will turn to a suitable navigable position
+                    throttle = turn(Rover, 198)
+                
+                if throttle:
+                    # The rover will move
+                    Rover.steer = 0
+                    Rover.throttle = Rover.throttle_set
+                    # Distance from origin to rover
+                    dist_ent = abs(Rover.rover_dists - Rover.home_dists)
+                else:
+                    # Indicates maximum separation from the starting point
+                    Rover.dist_fin = abs(Rover.rover_dists - Rover.home_dists)
+    
+    # Just to make the rover do something
     # even if no modifications have been made to the code
     else:
         Rover.throttle = Rover.throttle_set
         Rover.steer = 0
         Rover.brake = 0
-        
+    
     # If in a state where want to pickup a rock send pickup command
     if Rover.near_sample and Rover.vel == 0 and not Rover.picking_up:
         Rover.send_pickup = True
     
     return Rover
+```
+
+When the rover gets stuck and a certain amount of time has elapsed the stuck() function will be activated which will cause the rover to reverse while rotating, also rarely in large areas the rover makes circles so we will correct the trajectory a little.
+```python
+# The rover can get stuck with some object, it will decelerate while it turns
+def stuck(Rover, mode, throttle):
+    # In large areas the rover seldom makes circles, with this we deflect it
+    if (Rover.vel >= Rover.max_vel and Rover.steer == 15) or (Rover.vel >= Rover.max_vel and Rover.steer == -15):
+        Rover.steer = 0
+    
+    # If the rover gets stuck with an object
+    if(Rover.vel > 0.05 and Rover.mode != mode):
+        Rover.stuck_time = 0
+    elif (Rover.total_time > 1 and Rover.vel == 0.0):
+        if Rover.stuck_time == 0:
+            Rover.stuck_time = Rover.total_time
+        elif (Rover.total_time - Rover.stuck_time) > 1:
+            # The rover's going backwards
+            Rover.throttle = throttle
+            # If there are valid values from the navigation path
+            if (np.clip(np.mean(Rover.nav_angles * 180/np.pi), -15, 15)) >= 0 or (np.clip(np.mean(Rover.nav_angles * 180/np.pi), -15, 15) < 0):
+                # Set steering to average angle clipped to the range +/- 15
+                Rover.steer = np.clip(np.mean(Rover.nav_angles * 180/np.pi), -15, 15)
+            else:
+                Rover.steer = 15
 ```
 
 #### - C. drive_rover.py modifications:
@@ -369,36 +577,25 @@ I change the acceleration, stop and start thresholds of the rover.
 class RoverState():
     def __init__(self):
         self.throttle_set = 0.6 # Throttle setting when accelerating
-        self.stop_forward = 100 # Threshold to initiate stopping
+        self.stop_forward = 200 # Threshold to initiate stopping
         self.go_forward = 1000 # Threshold to go forward again
 ```
 
-I add more parameters to the rover that contain the distances and angles of the rocks to be collected, the initial position, rover stuck time.
+I add more parameters to the rover that contain the distances and angles of the rocks to be collected, obstacles, the initial position and the rover, rover stuck time.
 ```python
-        self.stuck_time = None # Stuck time
+        self.pos_ini = True # Set initial values for the position
+        self.pos_fin = True # Set final values for the position
         self.start_pos = None # Start position (x, y)
+        self.dist_fin = None # Final position
+        self.stuck_time = None # Stuck time
         self.rock_dists = 0 # Rock distances of navigable terrain pixels
-        self.obst_dists = None # Obstacle distances of navigable terrain pixels
-        self.home_dists = None # Distance from home position
         self.rock_angles = 0 # Rock angles of navigable terrain pixels
+        self.obst_dists = None # Obstacle distances of navigable terrain pixels
         self.obst_angles = None # Angles of navigable terrain pixels
+        self.home_dists = None # Distance from home position
         self.home_angles = None # Angles from home position
-        self.sample_pos_found = None # to print string of sample position situation
-```
-
-#### - D. supporting_functions.py modifications:
-
-In the function def update_rover(Rover, data): we add the following lines of code to display more information about the position of the rocks to be collected.
-
-```python
-    'samples collected:', Rover.samples_collected, 'rock angles', Rover.rock_angles,
-    'rock distance', Rover.rock_dists, 'Samples positions', Rover.samples_pos)
-```
-
-In the create_output_images(Rover) function: we add the total number of rocks to collect
-```python
-    cv2.putText(map_add,"Rocks: "+str(Rover.samples_to_find), (0, 55), 
-                cv2.FONT_HERSHEY_COMPLEX, 0.4, (255, 255, 255), 1)
+        self.rover_dists = None # Angles of navigable terrain pixels
+        self.rover_angles = None # Angles from home position
 ```
 
 In the telemetry function def telemetry(sid, data): we add the rover parameters with the initial position.
@@ -414,10 +611,25 @@ Visualize complementary information in the simulator - speed, mode and FPS
                 mode = 'picking up'
             else:
                 mode = Rover.mode
-            cv2.putText(Rover.vision_image, "Speed: {}".format(round(Rover.vel, 3)), (2, Rover.vision_image.shape[0] - 24),
+            cv2.putText(Rover.vision_image, "Mode: {}".format(mode), (2, Rover.vision_image.shape[0] - 24),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
-            cv2.putText(Rover.vision_image, "Mode: {}         Current FPS: {}".format(mode, fps), (2, Rover.vision_image.shape[0] - 5),
+            cv2.putText(Rover.vision_image, "Current FPS: {}".format(fps), (2, Rover.vision_image.shape[0] - 5),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 2, cv2.LINE_AA)
+```
+
+#### - D. supporting_functions.py modifications:
+
+In the function def update_rover(Rover, data): we add the following lines of code to display more information about the position of the rocks to be collected.
+
+```python
+    'samples collected:', Rover.samples_collected, 'rock angles', Rover.rock_angles,
+    'rock distance', Rover.rock_dists, 'Samples positions', Rover.samples_pos)
+```
+
+In the create_output_images(Rover) function: we add the total number of rocks to collect
+```python
+    cv2.putText(map_add,"Rocks: "+str(Rover.samples_to_find), (0, 55), 
+                cv2.FONT_HERSHEY_COMPLEX, 0.4, (255, 255, 255), 1)
 ```
 
 #### Launching in autonomous mode your rover can navigate and map autonomously. Explain your results and how you might improve them in your writeup.
