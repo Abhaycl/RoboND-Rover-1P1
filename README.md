@@ -108,9 +108,11 @@ I have made some modifications to different functions. All details are shown in 
 
 1. These color_thresh function modifications make it so that it outputs all 3 thresholds, one for navigable path, rock samples, and rock samples; respectively. Thought, red and green thresholds higher than 100 and blue threshold lower than 50 do to recognize the yellow pixels from the rock samples.
 
-Thresholds are defined and used to identify the objects, such as the path, obstacles and rocks to be collected.
+We define several thresholds to identify the different objects, such as the path, obstacles and rocks to be collected, these thresholds are composed of a maximum and minimum range.
 ```python
-def color_thresh(img, rgb_thresh=(160, 160, 160, 100, 100, 50)):
+def color_thresh(img, min_path=np.array([159, 159, 159]), max_path=np.array([255, 255, 255]),
+                      min_rock=np.array([93, 173, 131]), max_rock=np.array([98, 255, 182]),
+                      min_obst=np.array([0, 0, 0]), max_obst=np.array([140, 140, 140])):
 ```
 
 Create an array of zeros same xy size as img, but single channel.
@@ -120,20 +122,23 @@ Create an array of zeros same xy size as img, but single channel.
     color_select_obst = np.zeros_like(img[:,:,0])
 ```
 
-Require that each pixel be above all three threshold values in RGB above_thresh will now contain a boolean array with "True" where threshold was met.
+Require that each pixel be above all three threshold values in RGB above_thresh will now contain a boolean array with "True" where threshold was met. I changed the RGB to HSV, so we could better detect the rocks. and take into account the maximum and minimum values of the different thresholds.
 ```python
     # Threshold for navigable path
-    above_thresh = (img[:,:,0] > rgb_thresh[0]) \
-                 & (img[:,:,1] > rgb_thresh[1]) \
-                 & (img[:,:,2] > rgb_thresh[2])
+    above_thresh = ((img[:, :, 0] > min_path[0]) & (img[:, :, 0] <= max_path[0])) \
+                 & ((img[:, :, 1] > min_path[1]) & (img[:, :, 1] <= max_path[1])) \
+                 & ((img[:, :, 2] > min_path[2]) & (img[:, :, 2] <= max_path[2]))
     # Threshold for rocks
-    between_thresh = (img[:,:,0] > rgb_thresh[3]) \
-                   & (img[:,:,1] > rgb_thresh[4]) \
-                   & (img[:,:,2] < rgb_thresh[5])
+    # Convert BGR to HSV
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    # Threshold the HSV image to get only yellow colors
+    between_thresh = ((hsv[:, :, 0] > min_rock[0]) & (hsv[:, :, 0] <= max_rock[0])) \
+                   & ((hsv[:, :, 1] > min_rock[1]) & (hsv[:, :, 1] <= max_rock[1])) \
+                   & ((hsv[:, :, 2] > min_rock[2]) & (hsv[:, :, 2] <= max_rock[2]))
     # Threshold for obstacles
-    below_thresh = (img[:,:,0] < rgb_thresh[0]) \
-                 & (img[:,:,1] < rgb_thresh[1]) \
-                 & (img[:,:,2] < rgb_thresh[2])
+    below_thresh = ((img[:, :, 0] > min_obst[0]) & (img[:, :, 0] <= max_obst[0])) \
+                 & ((img[:, :, 1] > min_obst[1]) & (img[:, :, 1] <= max_obst[1])) \
+                 & ((img[:, :, 2] > min_obst[2]) & (img[:, :, 2] <= max_obst[2]))
 ```
 
 Index the array of zeros with the boolean array and set to 1.
@@ -214,16 +219,16 @@ Convert map image pixel values to rover-centric coords.
 Convert rover-centric pixel values to world coordinates.
 ```python
     world_size = Rover.worldmap.shape[0]
-    obst_xworld, obst_yworld = pix_to_world(obst_xpix, obst_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, scale)
-    rock_xworld, rock_yworld = pix_to_world(rock_xpix, rock_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, scale)
-    path_xworld, path_yworld = pix_to_world(path_xpix, path_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, scale)
+    obst_xworld, obst_yworld = pix_to_world(obst_xpix, obst_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, Rover.scale)
+    rock_xworld, rock_yworld = pix_to_world(rock_xpix, rock_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, Rover.scale)
+    path_xworld, path_yworld = pix_to_world(path_xpix, path_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, Rover.scale)
 ```
 
 Update Rover worldmap (to be displayed on right side of screen).
 ```python
-    Rover.worldmap[obst_yworld, obst_xworld, 0] += 255
-    Rover.worldmap[rock_yworld, rock_xworld, 1] += 255
-    Rover.worldmap[path_yworld, path_xworld, 2] += 255
+    Rover.worldmap[obst_yworld, obst_xworld, 0] = 255
+    Rover.worldmap[rock_yworld, rock_xworld, 1] = 255
+    Rover.worldmap[path_yworld, path_xworld, 2] = 255
 ```
 
 Convert rover-centric pixel positions to polar coordinates.
@@ -552,6 +557,8 @@ def stuck(Rover, mode, throttle):
         elif (Rover.total_time - Rover.stuck_time) > 1:
             # The rover's going backwards
             Rover.throttle = throttle
+            # Wait for 350 milliseconds
+            time.sleep(.350)
             # If there are valid values from the navigation path
             if (np.clip(np.mean(Rover.nav_angles * 180/np.pi), -15, 15)) >= 0 or (np.clip(np.mean(Rover.nav_angles * 180/np.pi), -15, 15) < 0):
                 # Set steering to average angle clipped to the range +/- 15
