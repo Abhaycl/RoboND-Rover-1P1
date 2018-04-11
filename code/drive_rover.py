@@ -93,6 +93,7 @@ class RoverState():
         self.home_angles = None # Angles from home position
         self.rover_dists = None # Angles of navigable terrain pixels
         self.rover_angles = None # Angles from home position
+        self.scale = 30 #To adjust the rover's vision sizes
         #self.alter = True # Alternating rotation and acceleration to go to the beginning
         #self.ind = 0 # Number of steer
 # Initialize our rover 

@@ -4,7 +4,9 @@ import cv2
 # Identify pixels above the threshold
 # Threshold of RGB > 160 does a nice job of identifying ground pixels only
 #def color_thresh(img, rgb_thresh=(160, 160, 160)):
-def color_thresh(img, rgb_thresh=(160, 160, 160, 100, 100, 50)):
+def color_thresh(img, min_path=np.array([159, 159, 159]), max_path=np.array([255, 255, 255]),
+                      min_rock=np.array([93, 173, 131]), max_rock=np.array([98, 255, 182]),
+                      min_obst=np.array([0, 0, 0]), max_obst=np.array([140, 140, 140])):
     # Create an array of zeros same xy size as img, but single channel
     #color_select = np.zeros_like(img[:,:,0])
     color_select_path = np.zeros_like(img[:,:,0])
@@ -14,17 +16,20 @@ def color_thresh(img, rgb_thresh=(160, 160, 160, 100, 100, 50)):
     # above_thresh will now contain a boolean array with "True"
     # where threshold was met
     # Threshold for navigable path
-    above_thresh = (img[:,:,0] > rgb_thresh[0]) \
-                 & (img[:,:,1] > rgb_thresh[1]) \
-                 & (img[:,:,2] > rgb_thresh[2])
+    above_thresh = ((img[:, :, 0] > min_path[0]) & (img[:, :, 0] <= max_path[0])) \
+                 & ((img[:, :, 1] > min_path[1]) & (img[:, :, 1] <= max_path[1])) \
+                 & ((img[:, :, 2] > min_path[2]) & (img[:, :, 2] <= max_path[2]))
     # Threshold for rocks
-    between_thresh = (img[:,:,0] > rgb_thresh[3]) \
-                   & (img[:,:,1] > rgb_thresh[4]) \
-                   & (img[:,:,2] < rgb_thresh[5])
+    # Convert BGR to HSV
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    # Threshold the HSV image to get only yellow colors
+    between_thresh = ((hsv[:, :, 0] > min_rock[0]) & (hsv[:, :, 0] <= max_rock[0])) \
+                   & ((hsv[:, :, 1] > min_rock[1]) & (hsv[:, :, 1] <= max_rock[1])) \
+                   & ((hsv[:, :, 2] > min_rock[2]) & (hsv[:, :, 2] <= max_rock[2]))
     # Threshold for obstacles
-    below_thresh = (img[:,:,0] < rgb_thresh[0]) \
-                 & (img[:,:,1] < rgb_thresh[1]) \
-                 & (img[:,:,2] < rgb_thresh[2])
+    below_thresh = ((img[:, :, 0] > min_obst[0]) & (img[:, :, 0] <= max_obst[0])) \
+                 & ((img[:, :, 1] > min_obst[1]) & (img[:, :, 1] <= max_obst[1])) \
+                 & ((img[:, :, 2] > min_obst[2]) & (img[:, :, 2] <= max_obst[2]))
     # Index the array of zeros with the boolean array and set to 1
     #color_select[above_thresh] = 1
     color_select_path[above_thresh] = 1
@@ -138,16 +143,16 @@ def perception_step(Rover):
     path_xpix, path_ypix = rover_coords(threshed_path)
     # 6) Convert rover-centric pixel values to world coordinates
     world_size = Rover.worldmap.shape[0]
-    obst_xworld, obst_yworld = pix_to_world(obst_xpix, obst_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, scale)
-    rock_xworld, rock_yworld = pix_to_world(rock_xpix, rock_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, scale)
-    path_xworld, path_yworld = pix_to_world(path_xpix, path_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, scale)
+    obst_xworld, obst_yworld = pix_to_world(obst_xpix, obst_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, Rover.scale)
+    rock_xworld, rock_yworld = pix_to_world(rock_xpix, rock_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, Rover.scale)
+    path_xworld, path_yworld = pix_to_world(path_xpix, path_ypix, Rover.pos[0], Rover.pos[1], Rover.yaw, world_size, Rover.scale)
     # 7) Update Rover worldmap (to be displayed on right side of screen)
         # Example: Rover.worldmap[obstacle_y_world, obstacle_x_world, 0] += 1
         #          Rover.worldmap[rock_y_world, rock_x_world, 1] += 1
         #          Rover.worldmap[navigable_y_world, navigable_x_world, 2] += 1
-    Rover.worldmap[obst_yworld, obst_xworld, 0] += 255
-    Rover.worldmap[rock_yworld, rock_xworld, 1] += 255
-    Rover.worldmap[path_yworld, path_xworld, 2] += 255
+    Rover.worldmap[obst_yworld, obst_xworld, 0] = 255
+    Rover.worldmap[rock_yworld, rock_xworld, 1] = 255
+    Rover.worldmap[path_yworld, path_xworld, 2] = 255
     # 8) Convert rover-centric pixel positions to polar coordinates
     obst_dist, obst_angles = to_polar_coords(obst_xpix, obst_ypix)
     rock_dist, rock_angles = to_polar_coords(rock_xpix, rock_ypix)

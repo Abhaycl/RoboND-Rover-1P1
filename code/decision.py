@@ -1,4 +1,5 @@
 import numpy as np
+import time
 
 
 # Check that the rover is at the proper angle to accelerate or continue turning within the defined areas
@@ -31,6 +32,8 @@ def stuck(Rover, mode, throttle):
         elif (Rover.total_time - Rover.stuck_time) > 1:
             # The rover's going backwards
             Rover.throttle = throttle
+            # Wait for 350 milliseconds
+            time.sleep(.350)
             # If there are valid values from the navigation path
             if (np.clip(np.mean(Rover.nav_angles * 180/np.pi), -15, 15)) >= 0 or (np.clip(np.mean(Rover.nav_angles * 180/np.pi), -15, 15) < 0):
                 # Set steering to average angle clipped to the range +/- 15
