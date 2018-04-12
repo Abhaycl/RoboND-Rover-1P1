@@ -61,7 +61,7 @@ class RoverState():
         # when you can keep going and when you should stop.  Feel free to
         # get creative in adding new fields or modifying these!
         #self.stop_forward = 50 # Threshold to initiate stopping
-        self.stop_forward = 200 # Threshold to initiate stopping
+        self.stop_forward = 150 # Threshold to initiate stopping
         #self.go_forward = 500 # Threshold to go forward again
         self.go_forward = 1000 # Threshold to go forward again
         self.max_vel = 2 # Maximum velocity (meters/second)
@@ -93,7 +93,7 @@ class RoverState():
         self.home_angles = None # Angles from home position
         self.rover_dists = None # Angles of navigable terrain pixels
         self.rover_angles = None # Angles from home position
-        self.scale = 30 #To adjust the rover's vision sizes
+        self.scale = 30 # To adjust the rover's vision sizes
         #self.alter = True # Alternating rotation and acceleration to go to the beginning
         #self.ind = 0 # Number of steer
 # Initialize our rover 
