@@ -227,9 +227,11 @@ Convert rover-centric pixel values to world coordinates.
 
 Update Rover worldmap (to be displayed on right side of screen).
 ```python
-    Rover.worldmap[obst_yworld, obst_xworld, 0] = 255
-    Rover.worldmap[rock_yworld, rock_xworld, 1] = 255
-    Rover.worldmap[path_yworld, path_xworld, 2] = 255
+    # Don't corrupt perspective and thus map fidelity.
+    if (Rover.roll < 1.0 or Rover.roll < 359.0) and (Rover.pitch < 1.0 or Rover.pitch < 359.0):
+        Rover.worldmap[obst_yworld, obst_xworld, 0] = 255
+        Rover.worldmap[rock_yworld, rock_xworld, 1] = 255
+        Rover.worldmap[path_yworld, path_xworld, 2] = 255
 ```
 
 Convert rover-centric pixel positions to polar coordinates.
